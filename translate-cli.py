@@ -4,9 +4,11 @@ import urllib.error
 import urllib.parse
 import json
 import argparse
+import os.path
 
+SCRIPT_PATH = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 try:
-    with open("config.json", mode="r") as confFile:
+    with open(f"{SCRIPT_PATH}/config.json", mode="r") as confFile:
         config = json.loads(confFile.read())
         if(config["instance"][-1] == "/"): 
             config["instance"] = config["instance"][0:len(config["instance"])-1]
