@@ -51,32 +51,63 @@ def translate(source, target, string):
     url += f"/api/v1/{urllib.parse.quote(source)}/{urllib.parse.quote(target)}/{urllib.parse.quote(string)}"
     response = request(url)
     if response != None:
+        output = ""
         response = json.loads(response)
         if source == "auto":
-            print(f"{source} ({response['info']['detectedSource']}) >> {target}")
+            output += f"{source} ({response['info']['detectedSource']}) >> {target}"
         else:
-            print(f"{source} >> {target}")
-        print(f"\n{response['translation']}\n")
+            output += f"{source} >> {target}"
+
+        output += f"\n\n{response['translation']}\n"
 
         if response["info"]["pronunciation"] != {}:
-            print(f"[{response['info']['pronunciation']['query']}]")
+            output += f"\n[{response['info']['pronunciation']['query']}]"
         
         if response["info"]["extraTranslations"] != []:
-            print("Other translations:")
+            output += "\nOther translations:"
             for type in response["info"]["extraTranslations"]:
-                print(f"\t{type['type']}")
+                output += f"\n\t{type['type']}"
                 for word in type["list"]:
-                    print(f"\t  - {word['word']}")
+                    output += f"\n\t  - {word['word']}"
+        return output
 
+def fileInput(fileName):
+    try:
+        with open(fileName, "r") as file:
+            content = file.read()
+    except FileNotFoundError:
+        print(f"File {fileName} does not exist.")
+        exit()
+    except PermissionError:
+        print(f"Permission denied while trying to read from {fileName}")
+        exit()
+    except:
+        print(f"An error occured while trying to read from {fileName}")
+        exit()
+    return content
+
+def fileOutput(fileName, content):
+    try:
+        with open(fileName, "w") as file:
+            file.write(content)
+    except PermissionError:
+        print(f"File {fileName} is not writable")
+        exit()
+    except:
+        print(f"An error occured while trying to write to {fileName}")
+        exit()
 
 if __name__ == "__main__":
     args = argparse.ArgumentParser(description="CLI client for Lingva Translate, Google Translate front-end.")
-    listing = args.add_mutually_exclusive_group()
-    listing.add_argument("-l", "--list-source-languages", help="List available source languages and their codes", action="store_true")
-    listing.add_argument("-L", "--list-target-languages", help="List available target languages and their codes", action="store_true")
+    listingArgs = args.add_mutually_exclusive_group()
+    listingArgs.add_argument("-l", "--list-source-languages", help="List available source languages and their codes", action="store_true")
+    listingArgs.add_argument("-L", "--list-target-languages", help="List available target languages and their codes", action="store_true")
     args.add_argument("-s", "--source-language", help="Specify source language", type=str, action="store", metavar="code")
     args.add_argument("-t", "--target-language", help="Specify target language",type=str, action="store", metavar="code")
-    args.add_argument("string", help="String to be translated", action="store", nargs="?")
+    args.add_argument("-o", "--output-file", help="Write translation to a text file", action="store", type=str, metavar="file")
+    inputArgs = args.add_mutually_exclusive_group()
+    inputArgs.add_argument("-i", "--input-file", help="Use a text file as input", action="store", type=str, metavar="file")
+    inputArgs.add_argument("string", help="String to be translated", action="store", nargs="?")
     args = args.parse_args()
 
     if args.list_source_languages:
@@ -84,10 +115,13 @@ if __name__ == "__main__":
     elif args.list_target_languages:
         listLanguages("target")
     else:
-        if args.string == None:
-            string = input("> ")
+        if args.input_file != None:
+            string = fileInput(args.input_file)
         else:
-            string = args.string
+            if args.string == None:
+                string = input("> ")
+            else:
+                string = args.string
 
         if args.source_language == None:
             source = config["default_source_language"]
@@ -99,4 +133,7 @@ if __name__ == "__main__":
         else:
             target = args.target_language
         
-        translate(source, target, string)
+        translatedText = translate(source, target, string)
+        print(translatedText)
+        if args.output_file != None:
+            fileOutput(args.output_file, translatedText)
