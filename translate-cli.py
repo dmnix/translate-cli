@@ -5,6 +5,7 @@ import urllib.parse
 import json
 import argparse
 import os.path
+import sys
 
 SCRIPT_PATH = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 try:
@@ -13,24 +14,24 @@ try:
         if(config["instance"][-1] == "/"): 
             config["instance"] = config["instance"][0:len(config["instance"])-1]
 except FileNotFoundError:
-    print("Configuration file does not exist.")
-    exit()
+    print("ERROR: Configuration file does not exist.")
+    sys.exit(1)
 except PermissionError:
-    print("Permission denied while trying to load configuration file")
-    exit()
+    print("ERROR: Permission denied while trying to load configuration file")
+    sys.exit(1)
 except:
-    print("An error occured while trying to load configuration file")
-    exit()
+    print("ERROR: An error occured while trying to load configuration file")
+    sys.exit(1)
 
 def request(url):
     try:
         response = urllib.request.urlopen(url)
     except urllib.error.HTTPError as error:
-        print(f"HTTP error occured: {error.status} ({error.reason})")
-        return None
+        print(f"ERROR: HTTP error occured: {error.status} ({error.reason})")
+        sys.exit(1)
     except urllib.error.URLError as error:
-        print(f"An error occured: {error.reason}")
-        return None
+        print(f"ERROR: An error occured: {error.reason}")
+        sys.exit(1)
     
     return response.read()
 
@@ -40,50 +41,48 @@ def listLanguages(type):
     url += f"/api/v1/languages/{urllib.parse.quote(type)}"
     
     response = request(url)
-    if response != None:
-        response = json.loads(response)
-        print("Code\t\tName\n--------------------")
-        for language in response["languages"]:
-            print(f"{language['code']}\t\t{language['name']}")
+    response = json.loads(response)
+    print("Code\t\tName\n--------------------")
+    for language in response["languages"]:
+        print(f"{language['code']}\t\t{language['name']}")
     
 def translate(source, target, string):
     url = config["instance"]
     url += f"/api/v1/{urllib.parse.quote(source)}/{urllib.parse.quote(target)}/{urllib.parse.quote(string)}"
     response = request(url)
-    if response != None:
-        output = ""
-        response = json.loads(response)
-        if source == "auto":
-            output += f"{source} ({response['info']['detectedSource']}) >> {target}"
-        else:
-            output += f"{source} >> {target}"
+    output = ""
+    response = json.loads(response)
+    if source == "auto":
+        output += f"{source} ({response['info']['detectedSource']}) >> {target}"
+    else:
+        output += f"{source} >> {target}"
 
-        output += f"\n\n{response['translation']}\n"
+    output += f"\n\n{response['translation']}\n"
 
-        if response["info"]["pronunciation"] != {}:
-            output += f"\n[{response['info']['pronunciation']['query']}]"
-        
-        if response["info"]["extraTranslations"] != []:
-            output += "\nOther translations:"
-            for type in response["info"]["extraTranslations"]:
-                output += f"\n\t{type['type']}"
-                for word in type["list"]:
-                    output += f"\n\t  - {word['word']}"
-        return output
+    if response["info"]["pronunciation"] != {}:
+        output += f"\n[{response['info']['pronunciation']['query']}]"
+    
+    if response["info"]["extraTranslations"] != []:
+        output += "\nOther translations:"
+        for type in response["info"]["extraTranslations"]:
+            output += f"\n\t{type['type']}"
+            for word in type["list"]:
+                output += f"\n\t  - {word['word']}"
+    return output
 
 def fileInput(fileName):
     try:
         with open(fileName, "r") as file:
             content = file.read()
     except FileNotFoundError:
-        print(f"File {fileName} does not exist.")
-        exit()
+        print(f"ERROR: File {fileName} does not exist.")
+        sys.exit(1)
     except PermissionError:
-        print(f"Permission denied while trying to read from {fileName}")
-        exit()
+        print(f"ERROR: Permission denied while trying to read from {fileName}")
+        sys.exit(1)
     except:
-        print(f"An error occured while trying to read from {fileName}")
-        exit()
+        print(f"ERROR: An error occured while trying to read from {fileName}")
+        sys.exit(1)
     return content
 
 def fileOutput(fileName, content):
@@ -91,11 +90,11 @@ def fileOutput(fileName, content):
         with open(fileName, "w") as file:
             file.write(content)
     except PermissionError:
-        print(f"File {fileName} is not writable")
-        exit()
+        print(f"ERROR: File {fileName} is not writable")
+        sys.exit(1)
     except:
-        print(f"An error occured while trying to write to {fileName}")
-        exit()
+        print(f"ERROR: An error occured while trying to write to {fileName}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     args = argparse.ArgumentParser(description="CLI client for Lingva Translate, Google Translate front-end.")
