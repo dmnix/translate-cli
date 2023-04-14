@@ -52,15 +52,16 @@ def translate(source, target, string):
     response = request(url)
     output = ""
     response = json.loads(response)
+    if "query" in response["info"]["pronunciation"]:
+        output += f"/{response['info']['pronunciation']['query']}/"
     if source == "auto":
-        output += f"{source} ({response['info']['detectedSource']}) >> {target}"
+        output += f"\n{source} ({response['info']['detectedSource']}) >> {target}"
     else:
-        output += f"{source} >> {target}"
+        output += f"\n{source} >> {target}"
 
     output += f"\n\n{response['translation']}\n"
-
-    if response["info"]["pronunciation"] != {}:
-        output += f"\n[{response['info']['pronunciation']['query']}]"
+    if "translation" in response["info"]["pronunciation"]:
+        output += f"\n/{response['info']['pronunciation']['translation']}/"
     
     if response["info"]["extraTranslations"] != []:
         output += "\nOther translations:"
