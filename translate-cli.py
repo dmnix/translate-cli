@@ -127,7 +127,13 @@ if __name__ == "__main__":
             string = fileInput(args.input_file)
         else:
             if args.string == None:
-                string = input("> ")
+                string = ""
+                while True:
+                    line = sys.stdin.readline()
+                    if(line == "" or line == "\n"):
+                        break
+                    else:
+                        string += line
             else:
                 string = args.string
 
