@@ -47,29 +47,37 @@ def listLanguages(type):
         print(f"{language['code']}\t\t{language['name']}")
     
 def translate(source, target, string):
-    url = config["instance"]
-    url += f"/api/v1/{urllib.parse.quote(source)}/{urllib.parse.quote(target)}/{urllib.parse.quote(string)}"
+    url = f"{config['instance']}/api/v1/{urllib.parse.quote(source)}/{urllib.parse.quote(target)}/{urllib.parse.quote(string)}"
     response = request(url)
-    output = ""
     response = json.loads(response)
-    if "query" in response["info"]["pronunciation"]:
-        output += f"/{response['info']['pronunciation']['query']}/"
-    if source == "auto":
-        output += f"\n{source} ({response['info']['detectedSource']}) >> {target}"
-    else:
-        output += f"\n{source} >> {target}"
+    translation = f"{response['translation']}"
 
-    output += f"\n\n{response['translation']}\n"
-    if "translation" in response["info"]["pronunciation"]:
-        output += f"\n/{response['info']['pronunciation']['translation']}/"
+    # Pronunciation of input string
+    if "query" in response["info"]["pronunciation"]:
+        print(f"/{response['info']['pronunciation']['query']}/")
     
+    # Source and target languages
+    if source == "auto":
+        print(f"{source} ({response['info']['detectedSource']}) >> {target}")
+    else:
+        print(f"{source} >> {target}")    
+    
+    # Translation
+    print(translation, end="\n\n")
+
+    # Pronunciation of translated string
+    if "translation" in response["info"]["pronunciation"]:
+        print(f"/{response['info']['pronunciation']['translation']}/")
+    
+    ## Other tranlsations
     if response["info"]["extraTranslations"] != []:
-        output += "\nOther translations:"
+        print("Other translations:")
         for type in response["info"]["extraTranslations"]:
-            output += f"\n\t{type['type']}"
+            print(f"\t{type['type']}")
             for word in type["list"]:
-                output += f"\n\t  - {word['word']}"
-    return output
+                print(f"\t  - {word['word']}")
+                
+    return translation
 
 def fileInput(fileName):
     try:
@@ -134,6 +142,5 @@ if __name__ == "__main__":
             target = args.target_language
         
         translatedText = translate(source, target, string)
-        print(translatedText)
         if args.output_file != None:
             fileOutput(args.output_file, translatedText)
