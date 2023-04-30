@@ -146,7 +146,9 @@ if __name__ == "__main__":
             target = config["default_target_language"]
         else:
             target = args.target_language
-        
-        translatedText = translate(source, target, string)
+        if(string == "" or string == "\n"):
+            print("Can not translate empty text")
+        else:
+            translatedText = translate(source, target, string)
         if args.output_file != None:
             fileOutput(args.output_file, translatedText)
